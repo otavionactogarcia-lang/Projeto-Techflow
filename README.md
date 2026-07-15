@@ -18,3 +18,6 @@ Os testes automatizados estão configurados e ativos via pipeline de CI!
 2. Instale as dependências necessárias:
    ```bash
    pip install flask pytest
+3. Execute a aplicação:
+   ```bash
+   python projeto-techflow/src/app.py
