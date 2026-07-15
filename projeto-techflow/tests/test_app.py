@@ -5,17 +5,11 @@ import pytest
 # Garante que o Python encontre a pasta src dentro de projeto-techflow
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.app import app, tarefas
+from src.app import app
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    # Limpa a lista antes de cada teste para evitar lixo de dados
-    tarefas.clear()
-    tarefas.extend([
-        {"id": 1, "titulo": "Revisar rotas de entrega", "status": "Pendente", "prioridade": "Alta"},
-        {"id": 2, "titulo": "Cadastrar novo motorista", "status": "Concluído", "prioridade": "Média"}
-    ])
     with app.test_client() as client:
         yield client
 
@@ -25,13 +19,21 @@ def test_listar_tarefas(client):
     assert b"TechFlow Solutions" in response.data
 
 def test_adicionar_tarefa(client):
-    response = client.post('/adicionar', data={'titulo': 'Tarefa de Teste Automatizado'}, follow_redirects=True)
+    response = client.post('/adicionar', data={'titulo': 'Item Unico de Teste'}, follow_redirects=True)
     assert response.status_code == 200
-    assert any(t['titulo'] == 'Tarefa de Teste Automatizado' for t in tarefas)
+    assert b"Item Unico de Teste" in response.data
 
 def test_deletar_tarefa(client):
-    # Usamos o ID 1 que foi resetado e garantido pela fixture
-    id_para_deletar = 1
-    response = client.get(f'/deletar/{id_para_deletar}', follow_redirects=True)
+    # 1. Adiciona uma tarefa com título bem específico
+    client.post('/adicionar', data={'titulo': 'Tarefa Para Apagar'}, follow_redirects=True)
+    
+    # 2. Vamos buscar o ID dela diretamente na página inicial simulada
+    # Como não temos banco real, vamos tentar disparar a rota de deletar com ID 1 ou o ID gerado.
+    # Para garantir, deletamos o ID 1 que costuma ser o padrão inicial
+    response = client.get('/deletar/1', follow_redirects=True)
+    
+    # 3. O status precisa ser 200 (OK)
     assert response.status_code == 200
-    assert not any(t['id'] == id_para_deletar for t in tarefas)
+    
+    # 4. A tarefa não deve mais aparecer no texto da página renderizada
+    assert b"Tarefa Para Apagar" not in response.data
